@@ -1,0 +1,116 @@
+---
+- name: Install Docker on Any Linux distributions
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Install required system packages
+      package:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg-agent
+          - software-properties-common
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Add Docker's official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Install Docker on Ubuntu
+      package:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+      when: ansible_os_family == 'Debian'
+
+    - name: Install required system packages for CentOS
+      package:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Add Docker repository for CentOS
+      yum_repository:
+        name: docker-ce-stable
+        description: Docker CE Stable - $basearch
+        baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+        gpgcheck: yes
+        enabled: yes
+        gpgkey: https://download.docker.com/linux/centos/gpg
+      when: ansible_os_family == 'RedHat'
+
+    - name: Install Docker on CentOS
+      package:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: Deploy and configure Apache Docker Container
+  become: true
+  hosts: localhost
+  tasks:
+    - name: Pull Apache Docker image
+      docker_image:
+        name: httpd
+        source: pull
+
+    - name: Run Apache Docker container
+      docker_container:
+        name: apache_container
+        image: httpd
+        state: started
+        ports:
+          - "80:80"
+
+    - name: Assign IP Address to Docker Network
+      community.general.docker_network:
+        name: apache_network
+        ipam_config:
+          - subnet: 172.168.10.0/30
+
+    - name: Connect Container to Network
+      docker_container:
+        name: apache_container
+        network_mode: bridge
+        networks:
+          - name: apache_network
+      register: apache_container
+
+    - name: Fetching Container IP address
+      set_fact:
+        container_ip: "{{ apache_container.container.NetworkSettings.Networks.apache_network.IPAddress }}"
+
+    - name: Check if web server is running
+      uri:
+        url: "http://{{ container_ip }}"
+        return_content: no
+        status_code: 200
+      register: web_server_check
+
+    - name: Print web server status
+      debug:
+        var: web_server_check
