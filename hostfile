@@ -1,0 +1,2 @@
+
+192.168.246.163 ansible_user ALL=(ALL) NOPASSWD: ALL
