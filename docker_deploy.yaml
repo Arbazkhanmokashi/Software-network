@@ -71,7 +71,7 @@
 
 - name: Deploy and configure Apache Docker Container
   become: true
-  hosts: localhost
+  hosts: all
   tasks:
     - name: Pull Apache Docker image
       docker_image:
