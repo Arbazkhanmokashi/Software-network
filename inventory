@@ -1,2 +1,1 @@
-[apache-docker]
 arbaaz.uksouth.cloudapp.azure.com ansible_connection=ssh ansible_user=arbaaz
