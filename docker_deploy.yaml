@@ -1,6 +1,6 @@
 ---
 - name: Install Docker on Any Linux distributions
-  hosts: localhost
+  hosts: all
   become: yes
   tasks:
     - name: Install required system packages
